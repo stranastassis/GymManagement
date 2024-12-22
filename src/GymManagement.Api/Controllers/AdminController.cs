@@ -1,13 +1,13 @@
-﻿
-using GymManagement.Application.Subscriptions.Commands.CreateSubscription;
-using GymManagement.Application.Subscriptions.Commands.DeleteSubscription;
-using GymManagement.Application.Subscriptions.Queries.GetSubscription;
-using GymManagement.Contracts.Subscriptions;
+﻿using GymManagement.Application.Admins.Commands.CreateAdmin;
+using GymManagement.Application.Gyms.Queries.GetAdmin;
+using GymManagement.Contracts.Admins;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymManagement.Api.Controllers
 {
+    [Route("admin")]
+
     public class AdminController : ApiController
     {
         private readonly ISender _mediator;
@@ -27,57 +27,36 @@ namespace GymManagement.Api.Controllers
                     detail: "Name cannot be null or empty");
             }
 
-            var command = new CreateSubscriptionCommand(
-                subscriptionType,
-                request.AdminId);
+            var command = new CreateAdminCommand(request.Name);
 
-            var createSubscriptionResult = await _mediator.Send(command);
+            var adminResult = await _mediator.Send(command);
 
-            return createSubscriptionResult.Match(
+            return adminResult.Match(
                 subscription => CreatedAtAction(
-                    nameof(GetSubscription),
-                    new { subscriptionId = subscription.Id },
-                    new SubscriptionResponse(
-                        subscription.Id,
-                        ToDto(subscription.SubscriptionType))),
+                    nameof(GetAdmin),
+                    new { adminId = adminResult.Value.Id },
+                    new CreateAdminResponse(
+                        adminResult.Value.Id,
+                        adminResult.Value.Name)),
                 Problem);
         }
 
-        [HttpGet("{subscriptionId:guid}")]
-        public async Task<IActionResult> GetSubscription(Guid subscriptionId)
+        [HttpGet("{adminId:guid}")]
+        public async Task<IActionResult> GetAdmin(Guid adminId)
         {
-            var query = new GetSubscriptionQuery(subscriptionId);
+            var query = new GetAdminQuery(adminId);
 
-            var getSubscriptionsResult = await _mediator.Send(query);
+            var adminResult = await _mediator.Send(query);
 
-            return getSubscriptionsResult.Match(
-                subscription => Ok(new SubscriptionResponse(
-                    subscription.Id,
-                    ToDto(subscription.SubscriptionType))),
+            return adminResult.Match(
+                subscription => CreatedAtAction(
+                    nameof(GetAdmin),
+                    new { adminId = adminResult.Value.Id },
+                    new CreateAdminResponse(
+                        adminResult.Value.Id,
+                        adminResult.Value.Name)),
                 Problem);
         }
 
-        [HttpDelete("{subscriptionId:guid}")]
-        public async Task<IActionResult> DeleteSubscription(Guid subscriptionId)
-        {
-            var command = new DeleteSubscriptionCommand(subscriptionId);
-
-            var createSubscriptionResult = await _mediator.Send(command);
-
-            return createSubscriptionResult.Match(
-                _ => NoContent(),
-                Problem);
-        }
-
-        private static SubscriptionType ToDto(DomainSubscriptionType subscriptionType)
-        {
-            return subscriptionType.Name switch
-            {
-                nameof(DomainSubscriptionType.Free) => SubscriptionType.Free,
-                nameof(DomainSubscriptionType.Starter) => SubscriptionType.Starter,
-                nameof(DomainSubscriptionType.Pro) => SubscriptionType.Pro,
-                _ => throw new InvalidOperationException(),
-            };
-        }
     }
 }

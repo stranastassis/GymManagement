@@ -14,6 +14,13 @@ public class AdminsRepository : IAdminsRepository
         _dbContext = dbContext;
     }
 
+    public Task AddAsync(Admin admin)
+    {
+        _dbContext.Admins.Add(admin);
+
+        return Task.CompletedTask;
+    }
+
     public Task<Admin?> GetByIdAsync(Guid adminId)
     {
         return _dbContext.Admins.FirstOrDefaultAsync(a => a.Id == adminId);
